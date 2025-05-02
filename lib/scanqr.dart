@@ -186,7 +186,7 @@ class _ScanPageState extends State<ScanPage> {
                             SizedBox(height: 10),
                             Text(
                               // result?.coviniencePercentageFee?.value ?? "",
-                              " Pay : ${result?.transactionAmount?.value}/=",
+                              " Pay : ${result?.transactionAmount?.value}/= ",
                               style: TextStyle(fontSize: 16),
                             ),
                             SizedBox(height: 10),
@@ -223,6 +223,10 @@ class _ScanPageState extends State<ScanPage> {
                           ],
                         ),
                       ),
+                     if (result == null || result?.paymentAddress==null)
+                     Container(
+                      child: Text("This Qr code is corrupted"),
+                     ) 
                   ],
                 ),
               ),
