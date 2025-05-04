@@ -30,8 +30,8 @@ class _MyAppState extends State<MyApp> {
     try {
       final currentUser = await _accountService.getCurrentUser();
       setState(() {
-        _isLoggedIn = currentUser != null;
-        _username = currentUser;  // Assuming getCurrentUser returns the username
+        _isLoggedIn = currentUser['username'] != null;
+        _username = currentUser['username'];  // Extract just the username from the map
         _isCheckingAuth = false;
       });
     } catch (e) {

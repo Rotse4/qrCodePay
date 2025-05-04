@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:qr_code/account/admin_dashboard.dart';
 import '../services/account_service.dart';
-import '../home.dart'; // Import home page for navigation
-import 'sign_up.dart'; // Import sign-up page for navigation
+import '../home.dart'; 
+import 'sign_up.dart'; 
+// import '../admin/admin_dashboard.dart'; 
 
 class LoginPage extends StatefulWidget {
   const LoginPage({Key? key}) : super(key: key);
@@ -18,6 +20,7 @@ class _LoginPageState extends State<LoginPage> {
   final AccountService _accountService = AccountService();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool _isAdminLogin = false;  // Track whether we're in admin login mode
 
   @override
   void dispose() {
@@ -33,16 +36,41 @@ class _LoginPageState extends State<LoginPage> {
       });
 
       try {
-        final success = await _accountService.login(
+        final result = await _accountService.login(
           username: _usernameController.text.trim(),
           password: _passwordController.text.trim(),
         );
 
-        if (success) {
-          // Navigate to home page on successful login, passing the username
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (_) => HomePage(username: _usernameController.text.trim())),
-          );
+        if (result != null) {
+          if (_isAdminLogin) {
+            // Only allow admin login in admin mode
+            if (result['role'] == 'admin') {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => AdminDashboard(username: result['username'])),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('This account does not have admin privileges'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          } else {
+            // Regular user mode
+            if (result['role'] == 'admin') {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Please use admin login for admin accounts'),
+                  backgroundColor: Colors.orange,
+                ),
+              );
+            } else {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (_) => HomePage(username: result['username'])),
+              );
+            }
+          }
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -80,7 +108,7 @@ class _LoginPageState extends State<LoginPage> {
               children: [
                 // App Logo or Title
                 Text(
-                  'Welcome Back',
+                  _isAdminLogin ? 'Admin Login' : 'User Login',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         fontWeight: FontWeight.bold,
@@ -144,25 +172,44 @@ class _LoginPageState extends State<LoginPage> {
                   ? Center(child: CircularProgressIndicator())
                   : ElevatedButton(
                       onPressed: _submitForm,
-                      child: Text('Login'),
+                      child: Text(_isAdminLogin ? 'Admin Login' : 'User Login'),
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10),
                         ),
+                        backgroundColor: _isAdminLogin ? Colors.red : null,
                       ),
                     ),
                 SizedBox(height: 16),
 
-                // Sign Up Navigation
+                // Toggle between Admin and User login
                 TextButton(
                   onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => SignUpPage()),
-                    );
+                    setState(() {
+                      _isAdminLogin = !_isAdminLogin;
+                      // Clear the form when switching modes
+                      _usernameController.clear();
+                      _passwordController.clear();
+                    });
                   },
-                  child: Text('Don\'t have an account? Sign Up'),
+                  child: Text(_isAdminLogin 
+                    ? 'Switch to User Login' 
+                    : 'Switch to Admin Login'),
                 ),
+
+                if (!_isAdminLogin) ...[
+                  SizedBox(height: 16),
+                  // Sign Up Navigation (only shown in user mode)
+                  TextButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => SignUpPage()),
+                      );
+                    },
+                    child: Text('Don\'t have an account? Sign Up'),
+                  ),
+                ],
               ],
             ),
           ),
