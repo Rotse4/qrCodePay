@@ -16,6 +16,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
   List<Map<String, dynamic>> _users = [];
   bool _isLoading = true;
 
+  Future<List<Map<String, dynamic>>> _loadFeedback() async {
+    final feedback = await _accountService.getFeedback();
+    return feedback;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -213,6 +218,78 @@ class _AdminDashboardState extends State<AdminDashboard> {
                                   ),
                                 ],
                               ) : null,
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Feedback Section
+                  Card(
+                    elevation: 4,
+                    margin: EdgeInsets.only(top: 16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Text(
+                            'Customer Feedback',
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        FutureBuilder<List<Map<String, dynamic>>>(
+                          future: _loadFeedback(),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return Center(child: CircularProgressIndicator());
+                            }
+                            
+                            if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                              return Padding(
+                                padding: EdgeInsets.all(16),
+                                child: Text('No feedback yet'),
+                              );
+                            }
+
+                            return ListView.separated(
+                              shrinkWrap: true,
+                              physics: NeverScrollableScrollPhysics(),
+                              itemCount: snapshot.data!.length,
+                              separatorBuilder: (_, __) => Divider(height: 1),
+                              itemBuilder: (context, index) {
+                                final feedback = snapshot.data![index];
+                                return ListTile(
+                                  title: Text(feedback['title']),
+                                  subtitle: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(feedback['feedback']),
+                                      SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Text(
+                                            'Rating: ${feedback['rating'].round()} ★',
+                                            style: TextStyle(fontWeight: FontWeight.bold),
+                                          ),
+                                          SizedBox(width: 8),
+                                          Text('by ${feedback['username']}'),
+                                          Spacer(),
+                                          Text(
+                                            DateTime.parse(feedback['timestamp'])
+                                                .toLocal()
+                                                .toString()
+                                                .split('.')[0],
+                                            style: TextStyle(color: Colors.grey),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                  isThreeLine: true,
+                                );
+                              },
                             );
                           },
                         ),

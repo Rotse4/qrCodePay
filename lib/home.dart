@@ -5,6 +5,8 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qr_code/account/login.dart';
 import 'package:qr_code/services/account_service.dart';
 
+import 'account/feedback_page.dart';
+
 class HomePage extends StatefulWidget {
   final String username;
   const HomePage({super.key, required this.username});
@@ -27,127 +29,148 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              expandedHeight: 180.0,
-              floating: false,
-              pinned: true,
-              backgroundColor: Colors.white,
-              elevation: 0,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: [
-                        Color(0xFF0A8F69),
-                        Color(0xFF2EC4B6),
-                      ],
-                    ),
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 180.0,
+            floating: false,
+            pinned: true,
+            backgroundColor: Colors.white,
+            elevation: 0,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF0A8F69),
+                      Color(0xFF2EC4B6),
+                    ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.white, width: 2),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: Colors.black12,
-                                        blurRadius: 10,
-                                        offset: Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                  child: CircleAvatar(
-                                    radius: 30,
-                                    backgroundColor: Colors.white.withOpacity(0.2),
-                                    child: Icon(
-                                      Icons.person_rounded,
-                                      color: Colors.white,
-                                      size: 35,
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 15),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      "Welcome,",
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.w300,
-                                      ),
-                                    ),
-                                    Text(
-                                      widget.username,
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.bold,
-                                        letterSpacing: 0.5,
-                                      ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black12,
+                                      blurRadius: 10,
+                                      offset: Offset(0, 4),
                                     ),
                                   ],
                                 ),
-                              ],
-                            ),
-                            IconButton(
-                              icon: Icon(Icons.logout_rounded, color: Colors.white, size: 28),
-                              tooltip: 'Logout',
-                              onPressed: _logout,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+                                child: CircleAvatar(
+                                  radius: 30,
+                                  backgroundColor: Colors.white.withOpacity(0.2),
+                                  child: Icon(
+                                    Icons.person_rounded,
+                                    color: Colors.white,
+                                    size: 35,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 15),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    "Welcome,",
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w300,
+                                    ),
+                                  ),
+                                  Text(
+                                    widget.username,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.logout_rounded, color: Colors.white, size: 28),
+                            tooltip: 'Logout',
+                            onPressed: _logout,
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
             ),
-            SliverPadding(
-              padding: EdgeInsets.all(20),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  _buildActionCard(
+          ),
+          SliverPadding(
+            padding: EdgeInsets.all(20),
+            sliver: SliverList(
+              delegate: SliverChildListDelegate([
+                _buildActionCard(
+                  context,
+                  title: 'Scan QR Code',
+                  subtitle: 'Quick and secure payment',
+                  icon: Icons.qr_code_scanner_rounded,
+                  onTap: () => Navigator.push(
                     context,
-                    title: 'Scan QR Code',
-                    subtitle: 'Quick and secure payment',
-                    icon: Icons.qr_code_scanner_rounded,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => ScanPage()),
-                    ),
+                    MaterialPageRoute(builder: (context) => ScanPage()),
                   ),
-                  SizedBox(height: 20),
-                  _buildActionCard(
+                ),
+                SizedBox(height: 20),
+                _buildActionCard(
+                  context,
+                  title: 'Generate Payment QR',
+                  subtitle: 'Create your payment QR code',
+                  icon: Icons.qr_code_rounded,
+                  onTap: () => Navigator.push(
                     context,
-                    title: 'Generate Payment QR',
-                    subtitle: 'Create your payment QR code',
-                    icon: Icons.qr_code_rounded,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => PaymentPage(username: widget.username)),
-                    ),
+                    MaterialPageRoute(builder: (context) => PaymentPage(username: widget.username)),
                   ),
-                ]),
-              ),
+                ),
+              ]),
             ),
-          ],
+          ),
+        ],
+      ),
+      bottomNavigationBar: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => FeedbackPage(username: widget.username),
+              ),
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+          child: Text(
+            'Submit Feedback',
+            style: TextStyle(fontSize: 16),
+          ),
         ),
       ),
     );

@@ -193,4 +193,24 @@ class AccountService {
       return false;
     }
   }
+
+  // Feedback methods
+  Future<void> saveFeedback(Map<String, dynamic> feedback) async {
+    final prefs = await SharedPreferences.getInstance();
+    final feedbackList = prefs.getStringList('feedbacks') ?? [];
+    
+    feedbackList.add(jsonEncode(feedback));
+    await prefs.setStringList('feedbacks', feedbackList);
+  }
+
+  Future<List<Map<String, dynamic>>> getFeedback() async {
+    final prefs = await SharedPreferences.getInstance();
+    final feedbackList = prefs.getStringList('feedbacks') ?? [];
+    
+    return feedbackList
+        .map((str) => jsonDecode(str) as Map<String, dynamic>)
+        .toList()
+      ..sort((a, b) => DateTime.parse(b['timestamp'])
+          .compareTo(DateTime.parse(a['timestamp'])));
+  }
 }
