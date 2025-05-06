@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:qr_code/account/sign_up.dart';
+import 'package:qr_code/home.dart';
 import '../services/account_service.dart';
 import 'login.dart';
 
@@ -142,9 +143,24 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 padding: EdgeInsets.all(16.0),
                 children: [
                   // Welcome section
-                  Text(
-                    'Welcome, ${widget.username}',
-                    style: Theme.of(context).textTheme.headlineMedium,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
+                    children: [
+                      Text(
+                        'Welcome, ${widget.username}',
+                        style: Theme.of(context).textTheme.headlineMedium,
+                      ),
+
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => HomePage(username: widget.username),
+                          ),
+                        ),
+                        child: Text('HomePage'),
+                      ),
+                    ],
                   ),
                   SizedBox(height: 24),
 

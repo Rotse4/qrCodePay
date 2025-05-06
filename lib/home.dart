@@ -4,7 +4,7 @@ import 'package:qr_code/services/build_qr.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qr_code/account/login.dart';
 import 'package:qr_code/services/account_service.dart';
-
+import 'account/admin_dashboard.dart';
 import 'account/feedback_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -17,6 +17,20 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   final AccountService _accountService = AccountService();
+  String? _userRole;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserRole();
+  }
+
+  Future<void> _loadUserRole() async {
+    final user = await _accountService.getCurrentUser();
+    setState(() {
+      _userRole = user['role'];
+    });
+  }
 
   void _logout() async {
     await _accountService.logout();
@@ -37,6 +51,13 @@ class _HomePageState extends State<HomePage> {
             pinned: true,
             backgroundColor: Colors.white,
             elevation: 0,
+            actions: [
+              IconButton(
+                icon: Icon(Icons.logout_rounded, color: Colors.white),
+                tooltip: 'Logout',
+                onPressed: _logout,
+              ),
+            ],
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -107,11 +128,6 @@ class _HomePageState extends State<HomePage> {
                               ),
                             ],
                           ),
-                          IconButton(
-                            icon: Icon(Icons.logout_rounded, color: Colors.white, size: 28),
-                            tooltip: 'Logout',
-                            onPressed: _logout,
-                          ),
                         ],
                       ),
                     ],
@@ -124,27 +140,51 @@ class _HomePageState extends State<HomePage> {
             padding: EdgeInsets.all(20),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
-                _buildActionCard(
-                  context,
-                  title: 'Scan QR Code',
-                  subtitle: 'Quick and secure payment',
-                  icon: Icons.qr_code_scanner_rounded,
-                  onTap: () => Navigator.push(
+                if (_userRole == 'admin') ...[
+                  _buildActionCard(
                     context,
-                    MaterialPageRoute(builder: (context) => ScanPage()),
+                    title: 'Scan QR Code',
+                    subtitle: 'Quick and secure payment',
+                    icon: Icons.qr_code_scanner_rounded,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ScanPage()),
+                    ),
                   ),
-                ),
-                SizedBox(height: 20),
-                _buildActionCard(
-                  context,
-                  title: 'Generate Payment QR',
-                  subtitle: 'Create your payment QR code',
-                  icon: Icons.qr_code_rounded,
-                  onTap: () => Navigator.push(
+                  SizedBox(height: 20),
+                  _buildActionCard(
                     context,
-                    MaterialPageRoute(builder: (context) => PaymentPage(username: widget.username)),
+                    title: 'Generate Payment QR',
+                    subtitle: 'Create payment QR codes',
+                    icon: Icons.qr_code_rounded,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => PaymentPage(username: widget.username)),
+                    ),
                   ),
-                ),
+                  SizedBox(height: 20),
+                  _buildActionCard(
+                    context,
+                    title: 'Admin Dashboard',
+                    subtitle: 'Access admin features',
+                    icon: Icons.admin_panel_settings,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => AdminDashboard(username: widget.username)),
+                    ),
+                  ),
+                ] else ...[
+                  _buildActionCard(
+                    context,
+                    title: 'Scan QR Code',
+                    subtitle: 'Quick and secure payment',
+                    icon: Icons.qr_code_scanner_rounded,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ScanPage()),
+                    ),
+                  ),
+                ],
               ]),
             ),
           ),
@@ -157,7 +197,7 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => FeedbackPage(username: widget.username),
+                builder: (context) => AdminDashboard(username: widget.username),
               ),
             );
           },
@@ -425,17 +465,3 @@ class _PaymentPageState extends State<PaymentPage> {
     );
   }
 }
-
-// class ScanPage extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text("Scan QR Code"),
-//       ),
-//       body: Center(
-//         child: Text("QR Code Scanner will be here."),
-//       ),
-//     );
-//   }
-// }
