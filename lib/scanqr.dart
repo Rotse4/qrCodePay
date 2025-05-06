@@ -6,6 +6,8 @@ import 'package:qr_code/detail.dart';
 import 'package:qr_code/services/build_qr.dart';
 import 'package:qr_code/services/scanner.dart';
 import 'package:qr_code_scanner_plus/qr_code_scanner_plus.dart';
+import 'package:qr_code/services/qr_scan_report_service.dart';
+import 'package:qr_code/services/account_service.dart';
 import 'dart:io';
 
 // import 'package:scan/scan.dart';
@@ -19,6 +21,9 @@ class _ScanPageState extends State<ScanPage> {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
   QrCode? result;
+  final QRScanReportService _reportService = QRScanReportService();
+  final AccountService _accountService = AccountService();
+  bool _isDialogShown = false;
 
   @override
   void dispose() {
@@ -38,33 +43,111 @@ class _ScanPageState extends State<ScanPage> {
 
   void _onQRViewCreated(QRViewController controller) {
     this.controller = controller;
-    controller.scannedDataStream.listen((scanData) {
-      setState(() {
-        result = process.processQrCode(scanData.code ?? "");
-      });
+    controller.scannedDataStream.listen((scanData) async {
+      // Stop if dialog is already shown
+      if (_isDialogShown) return;
+
+      try {
+        final currentUser = await _accountService.getCurrentUser();
+        
+        setState(() {
+          result = process.processQrCode(scanData.code ?? "");
+        });
+
+        // Check if QR code is valid
+        if (result == null || 
+            result?.paymentAddress == null || 
+            result?.paymentAddress?.value == null ||
+            result?.paymentAddress?.value.isEmpty) {
+          // Pause camera before showing dialog
+          await controller.pauseCamera();
+          
+          // Prevent multiple dialogs
+          if (!_isDialogShown) {
+            _isDialogShown = true;
+            await _showCorruptQRDialog();
+          }
+          return;
+        }
+
+        // Record QR scan
+        await _reportService.recordQRScan(
+          scannedBy: currentUser['username'] ?? 'Unknown',
+          qrCodeId: result?.paymentAddress?.value[0].value ?? 'Unknown',
+          scanTime: DateTime.now(),
+          additionalDetails: 'Merchant: ${result?.merchantName?.value}, Amount: ${result?.transactionAmount?.value}',
+        );
+      } catch (e) {
+        print('Error processing QR code: $e');
+        
+        // Pause camera before showing dialog
+        await controller.pauseCamera();
+        
+        // Prevent multiple dialogs
+        if (!_isDialogShown) {
+          _isDialogShown = true;
+          await _showCorruptQRDialog();
+        }
+      }
     });
   }
 
   Future<void> _pickImageAndDecodeQR() async {
-    final picker = ImagePicker();
-    final XFile? pickedFile =
-        await picker.pickImage(source: ImageSource.gallery);
+    // Prevent multiple dialogs during image picking
+    if (_isDialogShown) return;
 
-    if (pickedFile != null) {
-      final MobileScannerController controller = MobileScannerController();
-      final BarcodeCapture? capture =
-          await controller.analyzeImage(pickedFile.path);
+    try {
+      final picker = ImagePicker();
+      final XFile? pickedFile =
+          await picker.pickImage(source: ImageSource.gallery);
 
-      if (capture != null && capture.barcodes.isNotEmpty) {
-        final String qrCode = capture.barcodes.first.rawValue ?? '';
-        // Process the QR code
-        setState(() {
-          result = process.processQrCode(qrCode);
-        });
-      } else {
-        _showErrorDialog("No QR code found.");
+      if (pickedFile != null) {
+        final MobileScannerController controller = MobileScannerController();
+        final BarcodeCapture? capture =
+            await controller.analyzeImage(pickedFile.path);
+
+        if (capture != null && capture.barcodes.isNotEmpty) {
+          final String qrCode = capture.barcodes.first.rawValue ?? '';
+          final currentUser = await _accountService.getCurrentUser();
+          
+          // Process the QR code
+          setState(() {
+            result = process.processQrCode(qrCode);
+          });
+
+          // Check if QR code is valid
+          if (result == null || 
+              result?.paymentAddress == null || 
+              result?.paymentAddress?.value == null ||
+              result?.paymentAddress?.value.isEmpty) {
+            // Prevent multiple dialogs
+            if (!_isDialogShown) {
+              _isDialogShown = true;
+              await _showCorruptQRDialog();
+            }
+            return;
+          }
+
+          // Record QR scan
+          await _reportService.recordQRScan(
+            scannedBy: currentUser['username'] ?? 'Unknown',
+            qrCodeId: result?.paymentAddress?.value[0].value ?? 'Unknown',
+            scanTime: DateTime.now(),
+            additionalDetails: 'Merchant: ${result?.merchantName?.value}, Amount: ${result?.transactionAmount?.value}',
+          );
+        } else {
+          _showErrorDialog("No QR code found.");
+        }
+        await controller.dispose();
       }
-      await controller.dispose();
+    } catch (e) {
+      print('Error picking and decoding QR code: $e');
+      
+      // Prevent multiple dialogs
+      if (!_isDialogShown) {
+        _isDialogShown = true;
+        await _showCorruptQRDialog();
+      }
     }
   }
 
@@ -87,6 +170,51 @@ class _ScanPageState extends State<ScanPage> {
         );
       },
     );
+  }
+
+  Future<void> _showCorruptQRDialog() async {
+    try {
+      await showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return WillPopScope(
+            onWillPop: () async => false,
+            child: AlertDialog(
+              title: Text(
+                'Invalid QR Code', 
+                style: TextStyle(color: Color(0xFF0A8F69)),
+              ),
+              content: Text(
+                'This QR code is corrupt or cannot be processed. Please try scanning a different QR code.',
+                style: TextStyle(color: Colors.black87),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: Text(
+                    'OK', 
+                    style: TextStyle(color: Color(0xFF0A8F69)),
+                  ),
+                  onPressed: () {
+                    // Reset state and resume camera
+                    setState(() {
+                      result = null;
+                      _isDialogShown = false;
+                    });
+                    
+                    // Resume camera and pop dialog
+                    controller?.resumeCamera();
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    } catch (e) {
+      print('Error showing corrupt QR dialog: $e');
+    }
   }
 
   @override
@@ -165,8 +293,10 @@ class _ScanPageState extends State<ScanPage> {
                         style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
                     ),
-                    if (result != null)
-                    // buildBottomSheet(context),
+                    if (result != null && 
+                        result?.paymentAddress != null && 
+                        result?.paymentAddress?.value != null &&
+                        result?.paymentAddress?.value.isNotEmpty)
                       Container(
                         padding: EdgeInsets.all(20),
                         decoration: BoxDecoration(
@@ -185,20 +315,17 @@ class _ScanPageState extends State<ScanPage> {
                             ),
                             SizedBox(height: 10),
                             Text(
-                              // result?.coviniencePercentageFee?.value ?? "",
-                              " Pay : ${result?.transactionAmount?.value}/= ",
+                              " Pay : ${result?.transactionAmount?.value ?? 'N/A'}/= ",
                               style: TextStyle(fontSize: 16),
                             ),
                             SizedBox(height: 10),
                             Text(
-                              // result?.coviniencePercentageFee?.value ?? "",
-                              "to : ${result?.merchantName?.value}",
+                              "to : ${result?.merchantName?.value ?? 'Unknown'}",
                               style: TextStyle(fontSize: 16),
                             ),
                             SizedBox(height: 10),
                             Text(
-                              // result?.coviniencePercentageFee?.value ?? "",
-                              "Acc : ${result?.paymentAddress?.value[0].value}",
+                              "Acc : ${result?.paymentAddress?.value[0].value ?? 'N/A'}",
                               style: TextStyle(fontSize: 16),
                             ),
                             SizedBox(height: 20),
@@ -223,10 +350,6 @@ class _ScanPageState extends State<ScanPage> {
                           ],
                         ),
                       ),
-                     if (result == null || result?.paymentAddress==null)
-                     Container(
-                      child: Text("This Qr code is corrupted"),
-                     ) 
                   ],
                 ),
               ),

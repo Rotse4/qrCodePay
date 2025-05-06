@@ -197,7 +197,7 @@ class _HomePageState extends State<HomePage> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AdminDashboard(username: widget.username),
+                builder: (context) => FeedbackPage(username: widget.username),
               ),
             );
           },

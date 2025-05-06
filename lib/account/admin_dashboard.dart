@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qr_code/account/sign_up.dart';
 import 'package:qr_code/home.dart';
+import 'package:qr_code/qr_scan_report_oage.dart';
 import '../services/account_service.dart';
 import 'login.dart';
 
@@ -145,20 +146,49 @@ class _AdminDashboardState extends State<AdminDashboard> {
                   // Welcome section
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-
                     children: [
-                      Text(
-                        'Welcome, ${widget.username}',
-                        style: Theme.of(context).textTheme.headlineMedium,
-                      ),
-
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => HomePage(username: widget.username),
-                          ),
+                      Expanded(
+                        child: Text(
+                          'Welcome, ${widget.username}',
+                          style: Theme.of(context).textTheme.headlineMedium,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: Text('HomePage'),
+                      ),
+                      SizedBox(width: 10),
+                      Wrap(
+                        spacing: 10,
+                        children: [
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => HomePage(username: widget.username),
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: Size(100, 40),
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            child: Text(
+                              'HomePage',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: () => Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => QRScanReportsPage(),
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: Size(100, 40),
+                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            ),
+                            child: Text(
+                              'QR Scan Reports',
+                              style: TextStyle(fontSize: 12),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
