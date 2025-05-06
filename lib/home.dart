@@ -4,8 +4,10 @@ import 'package:qr_code/services/build_qr.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:qr_code/account/login.dart';
 import 'package:qr_code/services/account_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'account/admin_dashboard.dart';
 import 'account/feedback_page.dart';
+// import 'package:url_launcher/url_launcher.dart';
 
 class HomePage extends StatefulWidget {
   final String username;
@@ -36,6 +38,83 @@ class _HomePageState extends State<HomePage> {
     await _accountService.logout();
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => LoginPage()),
+    );
+  }
+
+  // Method to launch phone call
+  Future<void> _launchPhoneCall(String phoneNumber) async {
+    // Remove any non-digit characters and ensure it starts with the country code
+    final cleanedPhoneNumber = phoneNumber.replaceAll(RegExp(r'\D'), '');
+    final formattedPhoneNumber = cleanedPhoneNumber.startsWith('254') 
+      ? '+$cleanedPhoneNumber' 
+      : '+254$cleanedPhoneNumber';
+
+    try {
+      final Uri phoneUri = Uri.parse('tel:$formattedPhoneNumber');
+      
+      // Detailed logging
+      print('Attempting to launch phone call to: $phoneUri');
+      
+      // Fallback method with explicit error handling
+      if (await canLaunchUrl(phoneUri)) {
+        final bool launched = await launchUrl(
+          phoneUri, 
+          mode: LaunchMode.externalApplication,
+        );
+        
+        print('Phone call launch result: $launched');
+        
+        if (!launched) {
+          _showErrorSnackbar('Could not launch phone call');
+        }
+      } else {
+        _showErrorSnackbar('Phone call is not supported on this device');
+      }
+    } catch (e) {
+      // Comprehensive error logging
+      print('Phone call launch error: $e');
+      _showErrorSnackbar('Error initiating phone call: $e');
+    }
+  }
+
+  // Method to launch email
+  Future<void> _launchEmail(String emailAddress) async {
+    try {
+      final Uri emailUri = Uri.parse('mailto:$emailAddress');
+      
+      // Detailed logging
+      print('Attempting to launch email to: $emailUri');
+      
+      // Fallback method with explicit error handling
+      if (await canLaunchUrl(emailUri)) {
+        final bool launched = await launchUrl(
+          emailUri, 
+          mode: LaunchMode.externalApplication,
+        );
+        
+        print('Email launch result: $launched');
+        
+        if (!launched) {
+          _showErrorSnackbar('Could not launch email app');
+        }
+      } else {
+        _showErrorSnackbar('Email app is not supported on this device');
+      }
+    } catch (e) {
+      // Comprehensive error logging
+      print('Email launch error: $e');
+      _showErrorSnackbar('Error launching email: $e');
+    }
+  }
+
+  // Helper method to show error snackbar
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 3),
+      ),
     );
   }
 
@@ -192,25 +271,120 @@ class _HomePageState extends State<HomePage> {
       ),
       bottomNavigationBar: Padding(
         padding: EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => FeedbackPage(username: widget.username),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FeedbackPage(username: widget.username),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            padding: EdgeInsets.symmetric(vertical: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10),
+              child: Text(
+                'Submit Feedback',
+                style: TextStyle(fontSize: 16),
+              ),
             ),
-          ),
-          child: Text(
-            'Submit Feedback',
-            style: TextStyle(fontSize: 16),
-          ),
+            SizedBox(height: 16),
+            Card(
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              color: Color(0xFFF0F4F8),
+              child: Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.support_agent, 
+                          color: Color(0xFF0A8F69),
+                          size: 30,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Customer Support',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0A8F69),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.phone, 
+                          color: Colors.black54,
+                        ),
+                        SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () => _launchPhoneCall('+254708868931'),
+                          child: Text(
+                            'Helpline: +254 708 868 931',
+                            style: TextStyle(
+                              fontSize: 16, 
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.email, 
+                          color: Colors.black54,
+                        ),
+                        SizedBox(width: 10),
+                        GestureDetector(
+                          onTap: () => _launchEmail('support@qrcodepay.com'),
+                          child: Text(
+                            'support@qrcodepay.com',
+                            style: TextStyle(
+                              fontSize: 16, 
+                              color: Colors.blue,
+                              decoration: TextDecoration.underline,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.chat, 
+                          color: Colors.black54,
+                        ),
+                        SizedBox(width: 10),
+                        Text(
+                          'Live Chat: Available 24/7',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
